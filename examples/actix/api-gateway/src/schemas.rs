@@ -1,9 +1,8 @@
-use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Task to do.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct User {
-    pub id: i64,
-    pub name: String,
+    pub id: Uuid,
     pub admin: bool,
 }

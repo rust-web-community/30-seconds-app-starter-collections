@@ -2,6 +2,7 @@
 use deadpool_postgres::*;
 use tokio_postgres::NoTls;
 use coi::{Provide, Inject};
+use uuid::Uuid;
 use crate::store_interface::UserRepository;
 use crate::schemas::User;
 use async_trait::async_trait;
@@ -43,14 +44,21 @@ impl UserPostgresProvider
     }
     pub async fn migrate(&self) -> Result<u64, tokio_postgres::Error>{
         let client = self.pool.get().await.unwrap();
-        client.execute("CREATE TABLE IF NOT EXISTS todo (id INT PRIMARY KEY, value TEXT, checked BOOLEAN);", &[]).await
+        client.execute("CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY, admin BOOLEAN);", &[]).await
     }
 }
 
 
 #[async_trait]
 impl UserRepository for PostgresUser {
-    async fn get_user(&self, id: i64) -> Option<User> {
-        None
+    async fn get_user(&self,id: Uuid) -> Option<User> {
+        let client = self.pool.get().await.unwrap();
+        let row = client.query_one("SELECT * FROM users WHERE id = $1;", &[&id]).await.unwrap();
+        Some(User {id:row.get::<_, Uuid>(0), admin:row.get::<_, bool>(1)})
+    }
+    async fn create_user(&self, id: Uuid) -> Result<(), ()> {
+        let client = self.pool.get().await.unwrap();
+        client.execute("INSERT INTO users (id, admin) VALUES ($1, false);", &[&id]).await.unwrap();
+        Ok(())
     }
 }
