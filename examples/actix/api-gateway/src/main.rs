@@ -21,10 +21,9 @@ mod stores {
 #[actix_web::main]
 async fn main() -> Result<(), impl Error> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    // Local access to a dockerized postgres
     let provider = UserPostgresProvider::new("some_postgres", "postgres", "replacethisplease", "postgres").await;
     let _res = provider.migrate().await;
-
-    
 
     let containers = container!{
         repository => provider; singleton,

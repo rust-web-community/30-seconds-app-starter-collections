@@ -1,37 +1,32 @@
-# Actix service bootstrap
+# Actix API gateway
 
 
 ## What is this
 
-This repository contain a fully working example of a service written with actix. It is meant to be as close as production ready as possible while remaining minimal and easy to understand.
-The service itself is a basic Create / Read / Update / Delete of a todo list, showcasing good production practices for web applications
+This repository contains an example of the API Gateway. It will enable you to efficiently deploy microservices behind a simple and fast authentication proxy.
 
 ## What you may reuse pulling this example
 
-- A fast web service in an extensible port and adapter pattern, using dependency injection
+- A multithreaded, fast gateway powered by actixs, able to serve tens of thousands of queries a second
+- A flexible proxy configured through a yml file, able to route to your microservices based on user permission, method, and query path
 - Documented sources you can play around and make experimental changes with
 - Multi stage docker file for building minimal images
-- API documentation and manual testing with Swagger UI, Redoc, Rapi
 - Async postgres client storage example
-- Unit testing using fixtures
-- Integration testing
 - Access logging
 
 ## Run and build the project
 
 ### With docker:
 
-Run `docker compose up -d`. On the first creation of db, it sends too soon a ready signal which may crash the web app. You may do `docker compose start app` to restart the service
+Run `docker compose up -d`. On the first creation of db, it may sends too soon a ready signal which may crash the app. Simply restart.
 
 ### Without docker
 
-Out of the box you will need a running postgres local instance. The code is provided without Tls option enabled. Once your postgres server is running, simply `cargo run`. Alternatively
-you can use an in-memory store provided. Swapping storage method is only a couple of line changes in the main.rs.
+Out of the box you will need a running postgres local instance. The code is provided without Tls option enabled. 
 
-### Testing
+Once your postgres server is running, run the `hello_service` by running `cargo_run` inside the folder.
 
-- Unit testing  `cargo test  --lib --bins`
-- Integration testing `cargo test --test '*'`. You will need to run the server instance to be able to pass integration test. See notes in the source file.
+`cargo run` in the main service will fail due to reusing port 8080. The ports are hardcoded in every project `main.rs`, so change as needed.
 
 ## License
 MIT
