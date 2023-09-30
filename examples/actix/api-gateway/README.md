@@ -4,10 +4,11 @@
 ## What is this
 
 This repository contains an example of the API Gateway. It will enable you to efficiently deploy microservices behind a simple and fast authentication proxy.
+Proxied through a https reverse proxy, you will protect simple http microservices by entreprise-grade auth in minutes.
 
 ## What you may reuse pulling this example
 
-- A multithreaded, fast gateway powered by actixs, able to serve tens of thousands of queries a second
+- A multithreaded, fast gateway powered by actix, able to serve (tens of) thousands of queries a second
 - A flexible proxy configured through a yml file, able to route to your microservices based on user permission, method, and query path
 - Documented sources you can play around and make experimental changes with
 - Multi stage docker file for building minimal images
