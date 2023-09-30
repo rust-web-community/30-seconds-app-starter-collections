@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports: 
+      - 8080:8080
+    links:
+      - some_postgres
+    environment:
+      RUST_BACKTRACE: 1
+  some_postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: "replacethisplease"

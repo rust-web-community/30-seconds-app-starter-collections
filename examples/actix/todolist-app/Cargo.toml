@@ -1,8 +1,27 @@
 [package]
-name = "todolist-app"
+name = "example"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-http = "3.4"
+actix-web = "4.4"
+env_logger = "0.10"
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+futures = "0.3"
+async-trait = "0.1"
+rstest = "0.18"
+async-std = { version = "1.11", features = ["attributes"] }
+mockall = "0.11"
+coi = "0.10"
+coi-actix-web = "0.7"
+deadpool-postgres = "0.7"
+reqwest = {version = "0.11", features = ["blocking"] }
+utoipa = { version="3" , features = ["actix_extras"] }
+utoipa-swagger-ui = { version ="3", features = ["actix-web"] }
+utoipa-redoc = { version ="0.1", features = ["actix-web"] }
+utoipa-rapidoc = {  version ="0.1", features = ["actix-web"] }
