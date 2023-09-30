@@ -21,6 +21,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "cu
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/app
 COPY --from=builder /usr/app/api_gateway/target/release/api_gateway /usr/app/api_gateway
+COPY ./routes.yml ./routes.yml
 
 RUN groupadd -g 10001 appuser && \
    useradd -u 10000 -g appuser appuser \

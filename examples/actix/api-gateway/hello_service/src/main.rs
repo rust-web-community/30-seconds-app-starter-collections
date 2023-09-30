@@ -1,8 +1,9 @@
 use std::{
     error::Error,
     net::Ipv4Addr,
+    format
 };
-use actix_http::header::{AUTHORIZATION, HeaderValue};
+use actix_http::header::{HeaderName, HeaderValue};
 use actix_web::{
     middleware::Logger,
     web,
@@ -32,8 +33,9 @@ fn configure() -> impl FnOnce(&mut web::ServiceConfig) {
 }
 fn route_config(config: &mut web::ServiceConfig) {
     config.service(
-        web::scope("/hello")
-            .route("", web::get().to(hello))
+        web::scope("")
+            .route("/", web::get().to(hello))
+            .route("/restricted", web::get().to(hello))
     ).service(health);
 }
 
@@ -43,5 +45,7 @@ async fn health() -> impl Responder {
 }
 
 async fn hello(req: HttpRequest) -> impl Responder {
-    HttpResponse::Ok().body(req.headers().get(AUTHORIZATION).unwrap_or(&HeaderValue::from_str("stranger").unwrap()).as_bytes().to_owned())
+    let default_value = HeaderValue::from_bytes("stranger".as_bytes()).unwrap();
+    let user_id_str = req.headers().get(HeaderName::from_bytes("X-User".as_bytes()).unwrap()).unwrap_or(&default_value).to_str().unwrap();
+    HttpResponse::Ok().body(format!("Hello {}", &user_id_str))
 }
