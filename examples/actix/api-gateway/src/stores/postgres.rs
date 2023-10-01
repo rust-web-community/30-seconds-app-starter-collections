@@ -42,6 +42,8 @@ impl UserPostgresProvider
         let pool = cfg.create_pool(NoTls).unwrap();
         Self {pool: pool}
     }
+
+    // For demo setup purpose
     pub async fn migrate(&self) -> Result<u64, tokio_postgres::Error>{
         let client = self.pool.get().await.unwrap();
         client.execute("CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY, admin BOOLEAN);", &[]).await

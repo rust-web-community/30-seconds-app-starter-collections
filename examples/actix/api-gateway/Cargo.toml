@@ -22,8 +22,9 @@ coi-actix-web = "0.7"
 deadpool-postgres = {version = "0.7"}
 tokio-postgres = { version = "0.7", features = ["with-uuid-1"] }
 reqwest = {version = "0.11", features = ["blocking"] }
-jwt = "0.16"
+jwt-simple = "0.11"
 sha2 = "0.10"
 hmac = "0.12"
+bytes = "1.5"
 uuid = {version = "1.4", features=["v4", "fast-rng"]}
 lazy_static = "1.4"

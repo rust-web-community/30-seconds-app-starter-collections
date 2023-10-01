@@ -11,6 +11,7 @@ use coi::container;
 use stores::postgres::UserPostgresProvider;
 
 mod rest;
+mod gateway;
 mod store_interface;
 mod schemas;
 mod stores {
