@@ -68,6 +68,7 @@ pub async fn gen_user(repository: Arc<dyn UserRepository>) -> Result<Uuid, ()> {
 }
 
 pub async fn gen_session_token (user_id: Uuid) -> String {
+    // Exact duration might vary based on business security requirements.
     let mut claims = Claims::create(Duration::from_days(1));
     claims.subject = Some(user_id.to_string());
     let key = get_key();

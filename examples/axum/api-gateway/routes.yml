@@ -1,0 +1,13 @@
+routes:
+  - 
+    methods: 
+      - GET
+    prefix: /hello
+    service: hello_service:8080
+    restrict_admin: false
+  - 
+    methods: 
+      - GET
+    prefix: /restricted
+    service: hello_service:8080/restricted
+    restrict_admin: true

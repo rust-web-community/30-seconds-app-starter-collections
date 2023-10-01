@@ -1,0 +1,16 @@
+services:
+  api_gateway:
+    build: .
+    ports: 
+      - 8080:8080
+    links:
+      - some_postgres
+      - hello_service
+    environment:
+      RUST_BACKTRACE: 1
+  hello_service:
+    build: hello_service
+  some_postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: "replacethisplease"
