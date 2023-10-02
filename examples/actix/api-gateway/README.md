@@ -29,6 +29,39 @@ Once your postgres server is running, run the `hello_service` by running `cargo_
 
 `cargo run` in the main service will fail due to reusing port 8080. The ports are hardcoded in every project `main.rs`, so change as needed.
 
+## Benchmarks
+
+Ran client and server locally, using docker, on my own hardware:
+
+- When the request is bounced and an error is sent:
+
+```
+$ wrk -t6 -c80 -d10s http://localhost:8000/hello -H "Cookie: session=invalid-cookie"
+Running 10s test @ http://localhost:8000/hello
+  6 threads and 80 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.86ms    3.50ms 103.29ms   99.36%
+    Req/Sec    21.30k     2.08k   38.69k    97.68%
+  1277871 requests in 10.10s, 127.96MB read
+  Non-2xx or 3xx responses: 1277871
+Requests/sec: 126528.81
+Transfer/sec:     12.67MB
+```
+
+- Performing actual proxy request on a single user (it will be a bit slower on average due to cache misses):
+
+```
+$ wrk -t6 -c80 -d10s http://localhost:8000/hello -H "Cookie: session=eyJhbGciOiJIUzM4NCIsInR5cCI6I[...]"
+Running 10s test @ http://localhost:8000/hello
+  6 threads and 80 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.79ms    1.22ms  49.06ms   90.25%
+    Req/Sec     7.52k   503.93     8.44k    71.40%
+  452694 requests in 10.10s, 190.39MB read
+Requests/sec:  44822.54
+Transfer/sec:     18.85MB
+```
+
 ## License
 MIT
 Meant to be used, derived or commercialised freely and openly anywhere.
