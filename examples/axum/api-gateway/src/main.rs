@@ -17,7 +17,6 @@ mod stores {
 use axum::{
     Router, Server
 };
-use tracing;
 use crate::rest::configure;
 
 /// Type alias that makes it easier to extract `UserRepo` trait objects.

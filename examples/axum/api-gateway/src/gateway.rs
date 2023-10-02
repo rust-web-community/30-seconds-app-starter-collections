@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::schemas::User;
 
 // Implements proxying any method towards authenticated microservices.
-pub async fn proxy(method: &str, path: &str, user: User) -> Result<(Bytes, u16, String), u16> {
+pub async fn proxy(method: &str, path: &str, user: User) -> Result<(String, u16, Bytes), u16> {
     // User is authenticated. Cookie jwt could be refreshed starting from here
 
     // Lazy load of the dynamic routing config file
@@ -30,7 +30,7 @@ pub async fn proxy(method: &str, path: &str, user: User) -> Result<(Bytes, u16, 
             let status = response.status().as_u16();
             // Refresh token, to avoid cutting session during browsing
             let refresh_token = gen_session_token(user.id).await;
-            return Ok((response.bytes().await.unwrap(), status, refresh_token))
+            return Ok((refresh_token, status, response.bytes().await.unwrap()))
         }
     }
     Err(404)
