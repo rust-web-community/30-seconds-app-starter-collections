@@ -2,7 +2,7 @@ services:
   api_gateway:
     build: .
     ports: 
-      - 8080:8080
+      - 8000:8000
     links:
       - some_postgres
       - hello_service

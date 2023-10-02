@@ -1,3 +1,4 @@
+use std::time::Instant;
 use uuid::Uuid;
 
 // Our simplified user model
@@ -6,4 +7,9 @@ use uuid::Uuid;
 pub struct User {
     pub id: Uuid,
     pub admin: bool,
+}
+
+pub struct CacheEntry {
+    pub admin: bool,
+    pub timestamp: Instant,
 }

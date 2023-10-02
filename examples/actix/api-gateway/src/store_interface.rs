@@ -1,13 +1,16 @@
-use coi::Inject;
 use crate::schemas::User;
 use async_trait::async_trait;
+use bytes::Bytes;
+use coi::Inject;
 use uuid::Uuid;
 
-// The repository abstraction allow to swap for a different backend than postgres while keeping all the rest code, if you wish to
-// Caching users is a good idea trying to follow best security practices would involve however that
-// the cache should be private, short-lived, and invalidated (via private endpoint query) as needed: role change, password change etc.
 #[async_trait]
 pub trait UserRepository: Inject {
-    async fn get_user(&self, id:Uuid) -> Option<User>;
-    async fn create_user(&self, id: Uuid) -> Result<(), ()>;
+    async fn get_user(&self, id: Uuid) -> Option<User>;
+    async fn create_user(&self, u: &User) -> Result<(), ()>;
+}
+
+#[async_trait]
+pub trait Proxy: Inject {
+    async fn make_request(&self, method: &str, url: &str, user_id: &Uuid) -> (u16, Bytes);
 }

@@ -1,29 +1,38 @@
 use actix_http::StatusCode;
 use actix_web::{
-    web,
-    get,
+    cookie::{
+        time::{Duration, OffsetDateTime},
+        Cookie, SameSite,
+    },
+    get, web,
     web::ServiceConfig,
-    HttpResponse, Responder, HttpRequest, cookie::{Cookie, time::{OffsetDateTime, Duration}, SameSite}, HttpResponseBuilder,
+    HttpRequest, HttpResponse, HttpResponseBuilder, Responder,
 };
 
-use coi_actix_web::inject;
 use crate::store_interface::UserRepository;
-use crate::gateway::{proxy, gen_user, gen_session_token};
+use crate::{
+    gateway::{gen_session_token, gen_user, proxy},
+    store_interface::Proxy,
+};
+use coi_actix_web::inject;
 
 pub(super) fn configure() -> impl FnOnce(&mut ServiceConfig) {
-    |config: &mut ServiceConfig| {
-        route_config(config)
-    }
+    |config: &mut ServiceConfig| route_config(config)
 }
 pub fn route_config(config: &mut ServiceConfig) {
-    config.service(web::scope("/public") // Everything that does not require any auth
-    .route("sign-up", web::get().to(sign_up)).service(health)).service(
-        web::scope("") // Routes are configuration driven
-            .route("/{tail:.*}", web::get().to(req_proxy))
-            .route("/{tail:.*}", web::post().to(req_proxy))
-            .route("/{tail:.*}", web::put().to(req_proxy))
-            .route("/{tail:.*}", web::delete().to(req_proxy))
-    );
+    config
+        .service(
+            web::scope("/public") // Everything that does not require any auth
+                .route("sign-up", web::get().to(sign_up))
+                .service(health),
+        )
+        .service(
+            web::scope("") // Routes are configuration driven
+                .route("/{tail:.*}", web::get().to(req_proxy))
+                .route("/{tail:.*}", web::post().to(req_proxy))
+                .route("/{tail:.*}", web::put().to(req_proxy))
+                .route("/{tail:.*}", web::delete().to(req_proxy)),
+        );
 }
 
 #[get("/health")]
@@ -43,35 +52,47 @@ fn session_cookie_from_token(token_str: &str) -> Cookie {
     cookie
 }
 
-
 #[inject]
-async fn req_proxy(#[inject] repository: Arc<dyn UserRepository>, req: HttpRequest) -> impl Responder{
+async fn req_proxy(
+    #[inject] repository: Arc<dyn UserRepository>,
+    #[inject] cache: Arc<dyn UserRepository>,
+    #[inject] client: Arc<dyn Proxy>,
+    req: HttpRequest,
+) -> impl Responder {
     let cookie = req.cookie("session");
     let opt_cookie = match cookie {
         Some(cookie_value) => Some(cookie_value.value().to_owned()),
-        None => None
+        None => None,
     };
-    match proxy(repository, req.method().as_str(), req.path(), opt_cookie).await {
-        Ok((body, code, token)) => HttpResponseBuilder::new(
-                StatusCode::from_u16(code).unwrap()
-            ).cookie(session_cookie_from_token(token.as_str())).body(body),
+    match proxy(
+        repository,
+        cache,
+        client,
+        req.method().as_str(),
+        req.path(),
+        opt_cookie,
+    )
+    .await
+    {
+        Ok((body, code, token)) => HttpResponseBuilder::new(StatusCode::from_u16(code).unwrap())
+            .cookie(session_cookie_from_token(token.as_str()))
+            .body(body),
         Err(code) => match code {
             401_u16 => HttpResponse::Unauthorized().body("Need authentication"),
             403_u16 => HttpResponse::Forbidden().body("Insuficient permissions"),
             404_u16 => HttpResponse::NotFound().body("Not found"),
-            _i32 => HttpResponse::BadRequest().body("Bad request")
-        }
+            _i32 => HttpResponse::BadRequest().body("Bad request"),
+        },
     }
 }
 
 #[inject]
 // Our extremely simplified signup. Get the url to automatically register a new user and get a cookie
 async fn sign_up(#[inject] repository: Arc<dyn UserRepository>) -> impl Responder {
-    
     let user_id = gen_user(repository).await.unwrap();
     let token_str = gen_session_token(user_id).await;
     let cookie = session_cookie_from_token(token_str.as_str());
-    HttpResponse::Ok().cookie(cookie).body("Signed up ! Check http://localhost:8080/hello/")
-
+    HttpResponse::Ok()
+        .cookie(cookie)
+        .body("Signed up ! Check http://localhost:8000/hello/")
 }
-
