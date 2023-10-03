@@ -1,31 +1,42 @@
 FROM rust:1.72 as builder
 
 WORKDIR /usr/app
-RUN USER=root cargo new --bin hello_service
+RUN rustup target add x86_64-unknown-linux-musl
+RUN apt update && apt install -y musl-tools musl-dev
+RUN update-ca-certificates
+
 WORKDIR /usr/app/hello_service
 
-COPY ./Cargo.toml  ./Cargo.toml
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid 10001 \
+    userland
+
+COPY ./Cargo.toml ./Cargo.toml
+RUN mkdir src && echo "fn main(){}" > ./src/main.rs
 
 RUN cargo build --release
-RUN rm src/*.rs
 COPY ./src ./src
 
 # 5. Build for release.
-RUN rm ./target/release/deps/hello_service*
-RUN cargo build --release
+RUN cargo build --target x86_64-unknown-linux-musl --release
 #--------
-FROM debian:bookworm-slim
-EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "curl --fail http://localhost:8000/health" ]
+FROM alpine
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "curl --fail http://localhost:8080/health" ]
+RUN apk add curl
+RUN apk add libc6-compat
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-WORKDIR /usr/app
-COPY --from=builder /usr/app/hello_service/target/release/hello_service /usr/app/hello_service
+WORKDIR /opt
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+COPY --from=builder /usr/app/hello_service/target/x86_64-unknown-linux-musl/release/hello_service ./
 
-RUN groupadd -g 10001 appuser && \
-   useradd -u 10000 -g appuser appuser \
-   && chown -R appuser:appuser /usr/app
+RUN chown userland:userland ./hello_service
 
-USER appuser:appuser
+USER userland
 
-CMD ["/usr/app/hello_service"]
+CMD ["/opt/hello_service"]

@@ -14,8 +14,7 @@ COPY ./src ./src
 RUN rm ./target/release/deps/api_gateway*
 RUN cargo build --release
 #--------
-FROM debian:bookworm-slim
-EXPOSE 8000
+FROM alpine
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "curl --fail http://localhost:8000/health" ]
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

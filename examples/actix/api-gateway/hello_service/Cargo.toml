@@ -10,3 +10,6 @@ actix-http = "3.4"
 actix-web = "4.4"
 env_logger = "0.10"
 log = "0.4"
+
+[target.'cfg(all(target_env = "musl", target_pointer_width = "64"))'.dependencies.jemallocator]
+version = "0.3"
