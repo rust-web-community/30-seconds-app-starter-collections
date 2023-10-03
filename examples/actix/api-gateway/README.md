@@ -64,7 +64,7 @@ Transfer/sec:     18.85MB
 
 - Performing proxy request on a user without cache (cache miss scenario):
 
-$ wrk -t6 -c80 -d10s http://localhost:8000/hello -H "Cookie: session=eyJhbGciOiJIUzM4NCIsInR5cCI6I[...]
+$ wrk -t6 -c80 -d10s http://localhost:8000/hello -H "Cookie: session=eyJhbGciOiJIUzM4NCIsInR5cCI6I[...]"
 ```
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency     3.99ms    3.34ms  81.46ms   99.32%
