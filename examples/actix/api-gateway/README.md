@@ -29,6 +29,14 @@ Once your postgres server is running, run the `hello_service` by running `cargo_
 
 `cargo run` in the main service will fail due to reusing port 8080. The ports are hardcoded in every project `main.rs`, so change as needed.
 
+## Manual testing
+
+Run the project. Check you are forbidden to access localhost:8000/hello
+
+Go to public/sign-up. You shouuld have a prompt saying you are signed up as your user is created.
+
+Browse /hello and /restricted. One should display your user id, the other be restricted as the default signup is created as not an admin.
+
 ## Benchmarks
 
 Ran client and server locally, using docker, on my own hardware:
