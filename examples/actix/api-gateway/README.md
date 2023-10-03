@@ -48,7 +48,7 @@ Requests/sec: 126528.81
 Transfer/sec:     12.67MB
 ```
 
-- Performing actual proxy request on a single user (it will be a bit slower on average due to cache misses):
+- Performing actual proxy request on a cached user:
 
 ```
 $ wrk -t6 -c80 -d10s http://localhost:8000/hello -H "Cookie: session=eyJhbGciOiJIUzM4NCIsInR5cCI6I[...]"
@@ -60,6 +60,18 @@ Running 10s test @ http://localhost:8000/hello
   452694 requests in 10.10s, 190.39MB read
 Requests/sec:  44822.54
 Transfer/sec:     18.85MB
+```
+
+- Performing proxy request on a user without cache (cache miss scenario):
+
+$ wrk -t6 -c80 -d10s http://localhost:8000/hello -H "Cookie: session=eyJhbGciOiJIUzM4NCIsInR5cCI6I[...]
+```
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.99ms    3.34ms  81.46ms   99.32%
+    Req/Sec     3.45k   352.30     6.88k    98.51%
+  207160 requests in 10.10s, 87.13MB read
+Requests/sec:  20512.04
+Transfer/sec:      8.63MB
 ```
 
 ## License
