@@ -1,6 +1,6 @@
-use crate::gateway::{gen_session_token, proxy};
-use crate::stores::config::get_key;
-use crate::DynUserRepo;
+use crate::stores::cache::User;
+use crate::stores::config::{get_config, get_key};
+use crate::{AppState, DynCache, DynHttp, DynUserRepo};
 use axum::headers::Cookie;
 use axum::routing::{delete, get, post, put};
 use axum::{
@@ -13,10 +13,10 @@ use axum::{
     response::{AppendHeaders, IntoResponse},
     Router,
 };
-use jwt_simple::prelude::{JWTClaims, MACLike, NoCustomClaims};
+use jwt_simple::prelude::{Claims, Duration, JWTClaims, MACLike, NoCustomClaims};
 use uuid::Uuid;
 
-pub fn configure(router: Router<DynUserRepo>) -> Router<DynUserRepo> {
+pub fn configure(router: Router<AppState>) -> Router<AppState> {
     router
         .route("/public/sign-up", get(sign_up))
         .route("/health", get(health))
@@ -30,8 +30,17 @@ async fn health() -> impl IntoResponse {
     "OK"
 }
 
+async fn gen_session_token(user_id: Uuid) -> String {
+    let mut claims = Claims::create(Duration::from_days(1));
+    claims.subject = Some(user_id.to_string());
+    let key = get_key();
+    key.authenticate(claims).unwrap()
+}
+
 async fn req_proxy(
     State(state_repo): State<DynUserRepo>,
+    State(proxy): State<DynHttp>,
+    State(cache): State<DynCache>,
     TypedHeader(cookie): TypedHeader<Cookie>,
     req: Request<Body>,
 ) -> impl IntoResponse {
@@ -60,53 +69,57 @@ async fn req_proxy(
     let user_id_str = try_user_id.unwrap();
     let user_id = Uuid::parse_str(&user_id_str).unwrap();
     // We also verify the user exists. This enable for permission check
-    let user = state_repo.get_user(user_id.clone()).await;
-    if user.is_none() {
-        return (StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
+    let mut opt_user = cache.get_user(user_id).await;
+    if opt_user.is_none() {
+        opt_user = state_repo.get_user(user_id.clone()).await;
+        if opt_user.is_none() {
+            return (StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
+        }
     }
-    let resp = proxy(req.method().as_str(), req.uri().path(), user.unwrap()).await;
-    if resp.is_ok() {
-        let (token, code, body) = resp.unwrap();
+    let user = opt_user.unwrap();
+    let _ret = cache.create_user(&user);
+    let route_config = get_config();
+    let method = req.method().as_str();
+    let path = req.uri().path();
+    for route in &route_config.routes {
+        if route.methods.contains(&method.to_owned()) && path.starts_with(&route.prefix) {
+            if route.restrict_admin && !user.admin {
+                return (StatusCode::FORBIDDEN, "Insuficient permissions").into_response();
+            }
+            let (code, body) = proxy.make_request(method, path, &user.id).await;
 
-        return (
-            StatusCode::from_u16(code).unwrap(),
-            AppendHeaders([(
-                SET_COOKIE,
-                format!(
-                    "session={}; Max-Age=86400; Path=/; SameSite=Lax; Secure",
-                    token
-                ),
-            )]),
-            String::from_utf8(body.to_vec()).unwrap(),
-        )
-            .into_response();
+            let token = gen_session_token(user_id).await;
+            return (
+                StatusCode::from_u16(code).unwrap(),
+                AppendHeaders([(
+                    SET_COOKIE,
+                    format!(
+                        "session={}; Max-Age=86400; Path=/; SameSite=Lax; Secure",
+                        token
+                    ),
+                )]),
+                String::from_utf8(body.to_vec()).unwrap(),
+            )
+                .into_response();
+        }
     }
-    match resp.unwrap_err() {
-        401_u16 => (
-            StatusCode::from_u16(401).unwrap(),
-            "Need authentication".to_owned(),
-        )
-            .into_response(),
-        403_u16 => (
-            StatusCode::from_u16(403).unwrap(),
-            "Insuficient permissions".to_owned(),
-        )
-            .into_response(),
-        404_u16 => (StatusCode::from_u16(404).unwrap(), "Not found".to_owned()).into_response(),
-        other_code => (
-            StatusCode::from_u16(other_code).unwrap(),
-            "Bad request".to_owned(),
-        )
-            .into_response(),
-    }
+    return (StatusCode::NOT_FOUND, "Not found").into_response();
 }
 
 //Our extremely simplified signup. Get the url to automatically register a new user and get a cookie
 
-async fn sign_up(State(state_repo): State<DynUserRepo>) -> impl IntoResponse {
-    let uuid = Uuid::new_v4();
-    state_repo.create_user(uuid).await.unwrap();
-    let token_str = gen_session_token(uuid).await;
+async fn sign_up(
+    State(state_repo): State<DynUserRepo>,
+    State(cache): State<DynCache>,
+) -> impl IntoResponse {
+    let u: User = User {
+        id: Uuid::new_v4(),
+        admin: false,
+    };
+    state_repo.create_user(&u).await.unwrap();
+    cache.create_user(&u).await.unwrap();
+    let token_str = gen_session_token(u.id).await;
+
     (
         StatusCode::OK,
         AppendHeaders([(
