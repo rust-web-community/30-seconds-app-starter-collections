@@ -14,7 +14,7 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(60);
 #[derive(Debug)]
 pub struct WsNotifySession {
     pub id: uuid::Uuid,
-    /// Client must send ping at least once per 60 seconds (CLIENT_TIMEOUT),
+    pub path: String,
     pub hb: Instant,
     pub addr: Addr<server::NotifyServer>,
 }
@@ -45,6 +45,7 @@ impl Actor for WsNotifySession {
         self.addr
             .send(server::Connect {
                 id: self.id,
+                path: self.path.clone(),
                 addr: addr.recipient(),
             })
             .into_actor(self)

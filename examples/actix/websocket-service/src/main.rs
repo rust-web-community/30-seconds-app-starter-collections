@@ -27,6 +27,7 @@ async fn ws_route(
     ws::start(
         session::WsNotifySession {
             id: user_id.into_inner().user_id,
+            path: req.path().to_owned(),
             hb: Instant::now(),
             addr: srv.get_ref().clone(),
         },
@@ -40,18 +41,30 @@ struct ConnectId {
     user_id: uuid::Uuid,
 }
 
-#[derive(Deserialize, Serialize, Clone, Message)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
+struct PostData {
+    user_id: Option<uuid::Uuid>,
+    data: String,
+}
+
+#[derive(Deserialize, Serialize, Clone, Message, Debug)]
 #[rtype(result = "()")]
 struct PushData {
-    user_id: uuid::Uuid,
-    data: String,
+    path: String,
+    post: PostData,
 }
 
 async fn push_route(
     srv: web::Data<Addr<server::NotifyServer>>,
-    post_param: web::Json<PushData>,
+    post_param: web::Json<PostData>,
+    req: HttpRequest,
 ) -> impl Responder {
-    let _ = srv.send(post_param.0).await;
+    let _ = srv
+        .send(PushData {
+            post: post_param.0,
+            path: req.path().to_owned(),
+        })
+        .await;
     actix_web::HttpResponse::Ok()
 }
 
@@ -67,8 +80,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(server.clone()))
-            .route("/", web::post().to(push_route))
-            .route("/ws", web::get().to(ws_route))
+            .route("/{tail:.*}", web::post().to(push_route))
+            .route("/{tail:.*}", web::get().to(ws_route))
             .wrap(Logger::default())
     })
     .workers(2)
