@@ -26,7 +26,7 @@ pub struct TodoPostgresProvider {
 
 impl TodoPostgresProvider
 {
-    pub async fn new(host: &str, user: &str, password: &str, dbname: &str) -> Self {
+    pub async fn new(host: &str, user: &str, password: &str, dbname: &str, port: &str) -> Self {
         // Connect to the database.
         let mut cfg = Config::new();
         if user.len() > 0{
@@ -36,6 +36,7 @@ impl TodoPostgresProvider
             cfg.password = Some(password.to_string());
         }
         cfg.host = Some(host.to_string());
+        cfg.port = Some(port.parse::<u16>().unwrap());
         cfg.dbname = Some(dbname.to_string());
         cfg.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
         let pool = cfg.create_pool(NoTls).unwrap();
