@@ -36,7 +36,7 @@ async fn main() -> Result<(), impl Error> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     //Swap here as needed
     //let provider = TodoMemoryProvider{todo_list: Vec::new()};
-    let provider = TodoPostgresProvider::new("some_postgres", "postgres", "replacethisplease", "postgres").await;
+    let provider = TodoPostgresProvider::new("some_postgres", "postgres", "replacethisplease", "postgres", "5432").await;
     let _res = provider.migrate().await;
     let containers = container!{
         repository => provider; singleton,
